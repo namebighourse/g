@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal Fridge Gallery</title>
+  <style>
+    :root {
+      --deep-space: #153743;
+      --cosmic-orange: #EB6504;
+      --void-black: #0A1A21;
+      --starlight: rgba(255,255,255,0.08);
+      --interstellar: rgba(235,101,4,0.15);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: var(--void-black);
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Helvetica Now', -apple-system, sans-serif;
+    }
+    
+    .universe {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      perspective: 2000px;
+    }
+    
+    .nebula-track {
+      display: flex;
+      height: 100%;
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .singularity {
+      position: relative;
+      min-width: 100%;
+      height: 100%;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    
+    .event-horizon {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      transform: scale(0.98);
+      transition: transform 4s cubic-bezier(0.22, 1, 0.36, 1),
+                  filter 3s ease;
+      filter: brightness(0.97);
+      will-change: transform, filter;
+    }
+    
+    .singularity.active .event-horizon {
+      transform: scale(1);
+      filter: brightness(1.03);
+    }
+    
+    /* Квантовые точки навигации */
+    .quantum-dots {
+      position: absolute;
+      bottom: 5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 14px;
+      z-index: 20;
+      padding: 12px;
+      background: rgba(10, 26, 33, 0.7);
+      border-radius: 50px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    
+    .quantum-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--starlight);
+      cursor: pointer;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .quantum-dot::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0%;
+      height: 100%;
+      background: var(--cosmic-orange);
+      transition: width 5s linear;
+    }
+    
+    .quantum-dot.active {
+      transform: scale(1.4);
+      background: transparent;
+    }
+    
+    .quantum-dot.active::after {
+      width: 100%;
+    }
+    
+    /* Гравитационные кнопки */
+    .gravity-controls {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+    
+    .black-hole {
+      position: absolute;
+      top: 50%;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: all;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity: 0;
+      background: radial-gradient(circle, rgba(21,55,67,0.7) 0%, rgba(21,55,67,0) 70%);
+    }
+    
+    .universe:hover .black-hole {
+      opacity: 1;
+    }
+    
+    .black-hole.prev {
+      left: 2vw;
+    }
+    
+    .black-hole.next {
+      right: 2vw;
+    }
+    
+    .black-hole:hover {
+      background: radial-gradient(circle, rgba(235,101,4,0.5) 0%, rgba(235,101,4,0) 70%);
+    }
+    
+    .black-hole::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border-top: 3px solid var(--cosmic-orange);
+      border-right: 3px solid var(--cosmic-orange);
+      transform: rotate(-135deg);
+      opacity: 0.7;
+      transition: all 0.4s ease;
+    }
+    
+    .black-hole.next::after {
+      transform: rotate(45deg);
+    }
+    
+    .black-hole:hover::after {
+      opacity: 1;
+      border-color: white;
+    }
+    
+    /* Атмосферные эффекты */
+    .atmosphere {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, transparent 60%, var(--void-black) 90%);
+      z-index: 5;
+    }
+    
+    /* Космическая пыль */
+    .cosmic-dust {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 30%, var(--interstellar) 0%, transparent 30%),
+        radial-gradient(circle at 80% 70%, var(--interstellar) 0%, transparent 30%);
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 2s ease;
+    }
+    
+    .singularity.active .cosmic-dust {
+      opacity: 1;
+    }
+    
+    /* Реакция на курсор */
+    .cursor-aura {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--interstellar) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+    
+    .universe:hover .cursor-aura {
+      opacity: 0.3;
+    }
+    
+    /* Адаптивность пространства-времени */
+    @media (max-width: 768px) {
+      .black-hole {
+        width: 60px;
+        height: 60px;
+        opacity: 0.7 !important;
+      }
+      
+      .quantum-dots {
+        bottom: 3vh;
+        gap: 10px;
+      }
+      
+      .quantum-dot {
+        width: 8px;
+        height: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="universe" id="universe">
+    <div class="cursor-aura" id="cursorAura"></div>
+    
+    <div class="nebula-track" id="track">
+      <!-- Singularity 1 -->
+      <div class="singularity active">
+        <img src="https://cdn.jsdelivr.net/gh/namebighourse/g@main/20250526_2010_Оранжевый%20холодильник_remix_01jw6ev7p8fwgvdjms4m8vk1jz.png" 
+             class="event-horizon" alt="Оранжевый холодильник">
+        <div class="cosmic-dust"></div>
+      </div>
+      
+      <!-- Singularity 2 -->
+      <div class="singularity">
+        <img src="https://cdn.jsdelivr.net/gh/namebighourse/g@main/20250526_2107_Зеленый%20холодильник_remix_01jw6j2h29evqsvep4atd1fcsn.png" 
+             class="event-horizon" alt="Зеленый холодильник">
+        <div class="cosmic-dust"></div>
+      </div>
+      
+      <!-- Singularity 3 -->
+      <div class="singularity">
+        <img src="https://cdn.jsdelivr.net/gh/namebighourse/g@main/20250526_2107_Зеленый%20холодильник_remix_01jw6j2h2aehhrcmfettmhh04w.png" 
+             class="event-horizon" alt="Зеленый холодильник вариант 2">
+        <div class="cosmic-dust"></div>
+      </div>
+      
+      <!-- Singularity 4 -->
+      <div class="singularity">
+        <img src="https://cdn.jsdelivr.net/gh/namebighourse/g@main/20250526_2126_Зелёный%20холодильник_remix_01jw6k6fxrfb6v59ncrc37xegn%20(1)-Photoroom.png" 
+             class="event-horizon" alt="Зеленый холодильник premium">
+        <div class="cosmic-dust"></div>
+      </div>
+    </div>
+    
+    <div class="atmosphere"></div>
+    
+    <div class="gravity-controls">
+      <div class="black-hole prev" id="prevBtn"></div>
+      <div class="black-hole next" id="nextBtn"></div>
+    </div>
+    
+    <div class="quantum-dots" id="dots">
+      <div class="quantum-dot active"></div>
+      <div class="quantum-dot"></div>
+      <div class="quantum-dot"></div>
+      <div class="quantum-dot"></div>
+    </div>
+  </div>
+
+  <script>
+    class InterstellarSlider {
+      constructor() {
+        this.universe = document.getElementById('universe');
+        this.track = document.getElementById('track');
+        this.singularities = Array.from(document.querySelectorAll('.singularity'));
+        this.quantumDots = Array.from(document.getElementById('dots').children);
+        this.prevBtn = document.getElementById('prevBtn');
+        this.nextBtn = document.getElementById('nextBtn');
+        this.cursorAura = document.getElementById('cursorAura');
+        
+        this.currentIndex = 0;
+        this.isAnimating = false;
+        this.autoScrollInterval = null;
+        this.touchStartX = 0;
+        this.touchEndX = 0;
+        
+        this.init();
+      }
+      
+      init() {
+        this.setupEventListeners();
+        this.startAutoScroll();
+        this.resetQuantumDots();
+        this.setupCursorTracking();
+      }
+      
+      setupEventListeners() {
+        this.prevBtn.addEventListener('click', () => this.navigate(-1));
+        this.nextBtn.addEventListener('click', () => this.navigate(1));
+        
+        this.quantumDots.forEach((dot, index) => {
+          dot.addEventListener('click', () => this.goToSlide(index));
+        });
+        
+        // Touch events
+        this.track.addEventListener('touchstart', (e) => {
+          this.touchStartX = e.changedTouches[0].screenX;
+          this.pauseAutoScroll();
+        }, { passive: true });
+        
+        this.track.addEventListener('touchend', (e) => {
+          this.touchEndX = e.changedTouches[0].screenX;
+          this.handleSwipe();
+          this.resumeAutoScroll();
+        }, { passive: true });
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft') this.navigate(-1);
+          if (e.key === 'ArrowRight') this.navigate(1);
+        });
+      }
+      
+      setupCursorTracking() {
+        this.universe.addEventListener('mousemove', (e) => {
+          const { left, top, width, height } = this.universe.getBoundingClientRect();
+          const x = e.clientX - left;
+          const y = e.clientY - top;
+          
+          this.cursorAura.style.left = `${x}px`;
+          this.cursorAura.style.top = `${y}px`;
+          
+          // Параллакс-эффект для изображений
+          const xPercent = (x / width - 0.5) * 2;
+          const yPercent = (y / height - 0.5) * 2;
+          
+          this.singularities.forEach(slide => {
+            const img = slide.querySelector('.event-horizon');
+            if (img) {
+              img.style.transform = `scale(1) translateX(${xPercent * 0.5}%) translateY(${yPercent * 0.5}%)`;
+            }
+          });
+        });
+      }
+      
+      navigate(direction) {
+        if (this.isAnimating) return;
+        
+        const newIndex = (this.currentIndex + direction + this.singularities.length) % this.singularities.length;
+        this.goToSlide(newIndex);
+      }
+      
+      goToSlide(index) {
+        if (this.isAnimating || index === this.currentIndex) return;
+        
+        this.isAnimating = true;
+        this.currentIndex = index;
+        
+        // Анимация перехода
+        this.track.style.transform = `translateX(-${index * 100}%)`;
+        
+        // Обновление активного состояния
+        this.singularities.forEach((slide, i) => {
+          slide.classList.toggle('active', i === index);
+        });
+        
+        // Обновление квантовых точек
+        this.resetQuantumDots();
+        
+        // Сброс анимации после завершения
+        setTimeout(() => {
+          this.isAnimating = false;
+        }, 1200);
+        
+        // Перезапуск автоскролла
+        this.pauseAutoScroll();
+        this.resumeAutoScroll();
+      }
+      
+      resetQuantumDots() {
+        this.quantumDots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === this.currentIndex);
+          
+          // Сброс и перезапуск анимации прогресса
+          dot.querySelector('after')?.remove();
+          const after = document.createElement('div');
+          after.style.cssText = `
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: var(--cosmic-orange);
+            transition: width 5s linear;
+          `;
+          dot.appendChild(after);
+          
+          if (i === this.currentIndex) {
+            setTimeout(() => {
+              after.style.width = '100%';
+            }, 10);
+          }
+        });
+      }
+      
+      handleSwipe() {
+        const threshold = 50;
+        const diff = this.touchStartX - this.touchEndX;
+        
+        if (Math.abs(diff) > threshold) {
+          if (diff > 0) {
+            this.navigate(1); // Свайп влево
+          } else {
+            this.navigate(-1); // Свайп вправо
+          }
+        }
+      }
+      
+      startAutoScroll() {
+        this.autoScrollInterval = setInterval(() => {
+          this.navigate(1);
+        }, 6000);
+      }
+      
+      pauseAutoScroll() {
+        clearInterval(this.autoScrollInterval);
+      }
+      
+      resumeAutoScroll() {
+        this.pauseAutoScroll();
+        this.startAutoScroll();
+      }
+    }
+    
+    // Инициализация при загрузке
+    document.addEventListener('DOMContentLoaded', () => {
+      new InterstellarSlider();
+    });
+  </script>
+</body>
+</html>
